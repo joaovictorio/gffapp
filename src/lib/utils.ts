@@ -12,21 +12,31 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function parseLocalDate(date: Date | string): Date {
+  const str = typeof date === "string" ? date : date.toISOString();
+  // Extract YYYY-MM-DD and treat as local date to avoid UTC shift
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return new Date(+match[1], +match[2] - 1, +match[3]);
+  }
+  return new Date(date);
+}
+
 export function formatDate(date: Date | string): string {
+  const d = parseLocalDate(date);
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    timeZone: "America/Sao_Paulo",
-  }).format(new Date(date));
+  }).format(d);
 }
 
 export function formatDateShort(date: Date | string): string {
+  const d = parseLocalDate(date);
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "short",
-    timeZone: "America/Sao_Paulo",
-  }).format(new Date(date));
+  }).format(d);
 }
 
 export function generateInviteCode(): string {
@@ -40,7 +50,7 @@ export function generateInviteCode(): string {
 
 export function diasAteAniversario(data: Date | string): number {
   const hoje = new Date();
-  const aniversario = new Date(data);
+  const aniversario = parseLocalDate(data);
   const proximoAniversario = new Date(
     hoje.getFullYear(),
     aniversario.getMonth(),
