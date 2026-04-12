@@ -38,6 +38,7 @@ export async function PUT(
     diaVencimento,
     observacao,
     status,
+    responsavelId,
   } = body;
 
   // Build update data with only provided fields
@@ -64,6 +65,7 @@ export async function PUT(
   if (recorrente !== undefined) updateData.recorrente = recorrente;
   if (diaVencimento !== undefined) updateData.diaVencimento = diaVencimento;
   if (observacao !== undefined) updateData.observacao = observacao;
+  if (responsavelId !== undefined) updateData.responsavelId = responsavelId || null;
 
   // Handle status change - when marking as PAGO, set dataPagamento
   if (status !== undefined) {
@@ -81,6 +83,9 @@ export async function PUT(
     include: {
       conta: {
         select: { id: true, nome: true, icone: true, cor: true, codigo: true },
+      },
+      responsavel: {
+        select: { id: true, nome: true, avatar: true },
       },
     },
   });

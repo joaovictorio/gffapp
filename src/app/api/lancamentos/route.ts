@@ -45,6 +45,9 @@ export async function GET(req: NextRequest) {
       conta: {
         select: { id: true, nome: true, icone: true, cor: true, codigo: true },
       },
+      responsavel: {
+        select: { id: true, nome: true, avatar: true },
+      },
     },
     orderBy: { dataVencimento: "desc" },
   });
@@ -71,6 +74,7 @@ export async function POST(req: NextRequest) {
     diaVencimento,
     observacao,
     eventoId,
+    responsavelId,
   } = body;
 
   // Validation
@@ -128,11 +132,15 @@ export async function POST(req: NextRequest) {
       status: "PENDENTE",
       observacao: observacao || null,
       criadoPorId: user?.id || null,
+      responsavelId: responsavelId || null,
       eventoId: eventoId || null,
     },
     include: {
       conta: {
         select: { id: true, nome: true, icone: true, cor: true, codigo: true },
+      },
+      responsavel: {
+        select: { id: true, nome: true, avatar: true },
       },
     },
   });

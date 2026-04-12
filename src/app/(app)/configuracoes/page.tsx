@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Membro {
   id: string;
@@ -30,6 +36,13 @@ export default function ConfiguracoesPage() {
   const [nomeFamilia, setNomeFamilia] = useState("");
   const [editando, setEditando] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [dialogSenha, setDialogSenha] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [senhaMsg, setSenhaMsg] = useState("");
+  const [senhaErro, setSenhaErro] = useState("");
+  const [salvandoSenha, setSalvandoSenha] = useState(false);
 
   const isAdmin = session?.user?.role === "admin";
 
@@ -61,6 +74,54 @@ export default function ConfiguracoesPage() {
       navigator.clipboard.writeText(familia.codigo);
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
+    }
+  }
+
+  async function alterarSenha() {
+    setSenhaMsg("");
+    setSenhaErro("");
+
+    if (!senhaAtual || !novaSenha || !confirmarSenha) {
+      setSenhaErro("Preencha todos os campos");
+      return;
+    }
+
+    if (novaSenha !== confirmarSenha) {
+      setSenhaErro("As senhas nao coincidem");
+      return;
+    }
+
+    if (novaSenha.length < 6) {
+      setSenhaErro("A nova senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+
+    setSalvandoSenha(true);
+    try {
+      const res = await fetch("/api/auth/alterar-senha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senhaAtual, novaSenha }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSenhaErro(data.error || "Erro ao alterar senha");
+      } else {
+        setSenhaMsg(data.message || "Senha alterada com sucesso!");
+        setSenhaAtual("");
+        setNovaSenha("");
+        setConfirmarSenha("");
+        setTimeout(() => {
+          setDialogSenha(false);
+          setSenhaMsg("");
+        }, 1500);
+      }
+    } catch {
+      setSenhaErro("Erro ao alterar senha");
+    } finally {
+      setSalvandoSenha(false);
     }
   }
 
@@ -136,6 +197,78 @@ export default function ConfiguracoesPage() {
           </p>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">🔒 Alterar Senha</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="h-12"
+            onClick={() => {
+              setSenhaAtual("");
+              setNovaSenha("");
+              setConfirmarSenha("");
+              setSenhaMsg("");
+              setSenhaErro("");
+              setDialogSenha(true);
+            }}
+          >
+            Alterar Senha
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={dialogSenha} onOpenChange={setDialogSenha}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Senha</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Senha Atual</Label>
+              <Input
+                type="password"
+                value={senhaAtual}
+                onChange={(e) => setSenhaAtual(e.target.value)}
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nova Senha</Label>
+              <Input
+                type="password"
+                value={novaSenha}
+                onChange={(e) => setNovaSenha(e.target.value)}
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Confirmar Nova Senha</Label>
+              <Input
+                type="password"
+                value={confirmarSenha}
+                onChange={(e) => setConfirmarSenha(e.target.value)}
+                className="h-12"
+              />
+            </div>
+            {senhaErro && (
+              <p className="text-sm text-red-600">{senhaErro}</p>
+            )}
+            {senhaMsg && (
+              <p className="text-sm text-green-600">{senhaMsg}</p>
+            )}
+            <Button
+              onClick={alterarSenha}
+              disabled={salvandoSenha}
+              className="w-full h-12"
+            >
+              {salvandoSenha ? "Salvando..." : "Alterar Senha"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>

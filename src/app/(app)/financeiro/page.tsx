@@ -39,6 +39,13 @@ interface Conta {
   codigo: string;
 }
 
+interface Membro {
+  id: string;
+  nome: string;
+  avatar: string | null;
+  role: string;
+}
+
 interface Lancamento {
   id: string;
   descricao: string;
@@ -52,6 +59,7 @@ interface Lancamento {
   status: "PENDENTE" | "PAGO" | "ATRASADO";
   observacao: string | null;
   conta: Conta;
+  responsavel?: { id: string; nome: string; avatar: string | null } | null;
 }
 
 interface ContaContabil {
@@ -101,6 +109,7 @@ export default function FinanceiroPage() {
   const [ano, setAno] = useState(hoje.getFullYear());
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [contas, setContas] = useState<ContaContabil[]>([]);
+  const [membros, setMembros] = useState<Membro[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -116,6 +125,7 @@ export default function FinanceiroPage() {
     recorrente: false,
     diaVencimento: "",
     observacao: "",
+    responsavelId: "",
   });
 
   const fetchLancamentos = useCallback(async () => {
@@ -147,6 +157,18 @@ export default function FinanceiroPage() {
     }
   }, []);
 
+  const fetchMembros = useCallback(async () => {
+    try {
+      const res = await fetch("/api/familia/membros");
+      if (res.ok) {
+        const data = await res.json();
+        setMembros(data);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar membros:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchLancamentos();
   }, [fetchLancamentos]);
@@ -154,6 +176,10 @@ export default function FinanceiroPage() {
   useEffect(() => {
     fetchContas();
   }, [fetchContas]);
+
+  useEffect(() => {
+    fetchMembros();
+  }, [fetchMembros]);
 
   // ── Summary ───────────────────────────────────────────
 
@@ -223,6 +249,7 @@ export default function FinanceiroPage() {
           ? parseInt(form.diaVencimento, 10)
           : null,
         observacao: form.observacao || null,
+        responsavelId: form.responsavelId || null,
       };
 
       const res = await fetch("/api/lancamentos", {
@@ -254,6 +281,7 @@ export default function FinanceiroPage() {
       recorrente: false,
       diaVencimento: "",
       observacao: "",
+      responsavelId: "",
     });
   }
 
@@ -319,6 +347,13 @@ export default function FinanceiroPage() {
             <p className="text-xs text-muted-foreground">
               {l.conta.nome} - Vence {formatDate(l.dataVencimento)}
             </p>
+            {l.responsavel && (
+              <p className="text-xs text-muted-foreground">
+                {l.responsavel.avatar || "\u{1F464}"}{" "}
+                {l.responsavel.nome}{" "}
+                {l.tipo === "RECEITA" ? "recebeu" : "pagou"}
+              </p>
+            )}
             <div className="flex gap-1.5 mt-1.5">
               <StatusBadge status={l.status} />
               <NaturezaBadge natureza={l.natureza} />
@@ -574,6 +609,28 @@ export default function FinanceiroPage() {
                         {c.icone || "📋"} {c.nome}
                       </SelectItem>
                     ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Responsavel */}
+            <div className="space-y-1.5">
+              <Label>Quem pagou/recebeu?</Label>
+              <Select
+                value={form.responsavelId}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, responsavelId: v ?? "" }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione um membro" />
+                </SelectTrigger>
+                <SelectContent>
+                  {membros.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.avatar || "\u{1F464}"} {m.nome}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

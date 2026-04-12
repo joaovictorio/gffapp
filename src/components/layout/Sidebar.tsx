@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/painel", label: "Inicio", emoji: "🏠" },
   { href: "/financeiro", label: "Dinheiro", emoji: "💰" },
+  { href: "/plano-financeiro", label: "Plano Financeiro", emoji: "📊" },
   { href: "/plano-de-contas", label: "Plano de Contas", emoji: "📋" },
   { href: "/aniversarios", label: "Aniversarios", emoji: "🎂" },
   { href: "/eventos", label: "Eventos", emoji: "📅" },

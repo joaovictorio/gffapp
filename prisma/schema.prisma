@@ -17,12 +17,13 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  usuarios     User[]
-  planoContas  ContaContabil[]
-  lancamentos  Lancamento[]
-  aniversarios Aniversario[]
-  eventos      Evento[]
-  eventoItens  EventoItem[]
+  usuarios          User[]
+  planoContas       ContaContabil[]
+  lancamentos       Lancamento[]
+  aniversarios      Aniversario[]
+  eventos           Evento[]
+  eventoItens       EventoItem[]
+  planosFinanceiros PlanoFinanceiro[]
 }
 
 model User {
@@ -38,7 +39,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  lancamentos Lancamento[]
+  lancamentosCriados     Lancamento[] @relation("LancamentoCriador")
+  lancamentosResponsavel Lancamento[] @relation("LancamentoResponsavel")
 
   @@index([tenantId])
 }
@@ -61,8 +63,9 @@ model ContaContabil {
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  lancamentos Lancamento[]
-  eventoItens EventoItem[]
+  lancamentos       Lancamento[]
+  eventoItens       EventoItem[]
+  planosFinanceiros PlanoFinanceiro[]
 
   @@unique([tenantId, codigo])
   @@index([tenantId])
@@ -88,7 +91,9 @@ model Lancamento {
   status         String    @default("PENDENTE")
   observacao     String?
   criadoPorId    String?
-  criadoPor      User?     @relation(fields: [criadoPorId], references: [id])
+  criadoPor      User?     @relation("LancamentoCriador", fields: [criadoPorId], references: [id])
+  responsavelId  String?
+  responsavel    User?     @relation("LancamentoResponsavel", fields: [responsavelId], references: [id])
   eventoId       String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -97,6 +102,7 @@ model Lancamento {
   @@index([tenantId, dataVencimento])
   @@index([contaId])
   @@index([eventoId])
+  @@index([responsavelId])
 }
 
 // ============ ANIVERSARIOS ============
@@ -160,4 +166,24 @@ model EventoItem {
 
   @@index([eventoId])
   @@index([tenantId])
+}
+
+// ============ PLANO FINANCEIRO ============
+
+model PlanoFinanceiro {
+  id             String        @id @default(uuid())
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contaId        String
+  conta          ContaContabil @relation(fields: [contaId], references: [id])
+  mes            Int           // 1-12
+  ano            Int           // e.g. 2026
+  valorPlanejado Float
+  observacao     String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([tenantId, contaId, mes, ano])
+  @@index([tenantId])
+  @@index([tenantId, mes, ano])
 }
