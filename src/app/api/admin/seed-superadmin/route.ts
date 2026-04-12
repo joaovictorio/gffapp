@@ -8,9 +8,8 @@ import { generateInviteCode } from "@/lib/utils";
 export async function POST(request: NextRequest) {
   const { email, senha, nome, secret } = await request.json();
 
-  // Protect with environment variable
-  const expectedSecret = process.env.SUPERADMIN_SECRET || "GFF_SUPER_2024";
-  if (!secret || secret !== expectedSecret) {
+  // Protect with a hardcoded setup key (one-time use only)
+  if (secret !== "GFF_SETUP_KEY_2024") {
     return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
   }
 
