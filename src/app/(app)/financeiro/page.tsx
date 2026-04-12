@@ -21,6 +21,12 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   PlusIcon,
@@ -252,20 +258,52 @@ export default function FinanceiroPage() {
     }
   }
 
-  // ── Mark as paid ──────────────────────────────────────
+  // ── Quitacao dialog ────────────────────────────────────
 
-  async function marcarComoPago(id: string) {
+  const [quitarOpen, setQuitarOpen] = useState(false);
+  const [quitarId, setQuitarId] = useState<string | null>(null);
+  const [quitarForm, setQuitarForm] = useState({
+    dataPagamento: new Date().toISOString().split("T")[0],
+    formaPagamento: "",
+    contaBancariaId: "",
+    responsavelId: "",
+  });
+  const [quitarSaving, setQuitarSaving] = useState(false);
+
+  function abrirQuitar(id: string) {
+    setQuitarId(id);
+    setQuitarForm({
+      dataPagamento: new Date().toISOString().split("T")[0],
+      formaPagamento: "",
+      contaBancariaId: "",
+      responsavelId: "",
+    });
+    setQuitarOpen(true);
+  }
+
+  async function confirmarQuitacao() {
+    if (!quitarId) return;
+    setQuitarSaving(true);
     try {
-      const res = await fetch(`/api/lancamentos/${id}`, {
+      const res = await fetch(`/api/lancamentos/${quitarId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "PAGO" }),
+        body: JSON.stringify({
+          status: "PAGO",
+          dataPagamento: quitarForm.dataPagamento,
+          formaPagamento: quitarForm.formaPagamento || null,
+          contaBancariaId: quitarForm.contaBancariaId || null,
+          responsavelId: quitarForm.responsavelId || null,
+        }),
       });
       if (res.ok) {
+        setQuitarOpen(false);
         fetchLancamentos();
       }
     } catch (err) {
-      console.error("Erro ao marcar como pago:", err);
+      console.error("Erro ao quitar:", err);
+    } finally {
+      setQuitarSaving(false);
     }
   }
 
@@ -468,7 +506,7 @@ export default function FinanceiroPage() {
                   variant="outline"
                   size="sm"
                   className="h-8 px-2 text-xs text-green-600"
-                  onClick={() => marcarComoPago(l.id)}
+                  onClick={() => abrirQuitar(l.id)}
                 >
                   <CheckIcon className="size-3.5" />
                 </Button>
@@ -621,6 +659,91 @@ export default function FinanceiroPage() {
       >
         <PlusIcon className="size-6" />
       </Button>
+      {/* Dialog de Quitacao */}
+      <Dialog open={quitarOpen} onOpenChange={setQuitarOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Quitar Lancamento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Data do Pagamento</Label>
+              <Input
+                type="date"
+                value={quitarForm.dataPagamento}
+                onChange={(e) => setQuitarForm((f) => ({ ...f, dataPagamento: e.target.value }))}
+                className="h-12"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Forma de Pagamento</Label>
+              <Select
+                value={quitarForm.formaPagamento || undefined}
+                onValueChange={(v) => setQuitarForm((f) => ({ ...f, formaPagamento: v ?? "" }))}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {FORMAS_PAGAMENTO.map((fp) => (
+                    <SelectItem key={fp.value} value={fp.value}>
+                      {fp.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Conta Bancaria</Label>
+              <Select
+                value={quitarForm.contaBancariaId || undefined}
+                onValueChange={(v) => setQuitarForm((f) => ({ ...f, contaBancariaId: v ?? "" }))}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {contasBancarias.map((cb) => (
+                    <SelectItem key={cb.id} value={cb.id}>
+                      {cb.icone || "🏦"} {cb.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Quem Pagou?</Label>
+              <Select
+                value={quitarForm.responsavelId || undefined}
+                onValueChange={(v) => setQuitarForm((f) => ({ ...f, responsavelId: v ?? "" }))}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {membros.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.avatar || "👤"} {m.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              className="w-full h-12 text-base bg-green-600 hover:bg-green-700"
+              onClick={confirmarQuitacao}
+              disabled={quitarSaving}
+            >
+              {quitarSaving ? "Quitando..." : "Confirmar Quitacao"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) setEditingId(null); }}>
 
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl">
@@ -696,7 +819,7 @@ export default function FinanceiroPage() {
             <div className="space-y-1.5">
               <Label>Categoria</Label>
               <Select
-                value={form.contaId}
+                value={form.contaId || undefined}
                 onValueChange={(val) =>
                   setForm((f) => ({ ...f, contaId: (val ?? "") as string }))
                 }
@@ -725,7 +848,7 @@ export default function FinanceiroPage() {
             <div className="space-y-1.5">
               <Label>Quem pagou/recebeu?</Label>
               <Select
-                value={form.responsavelId}
+                value={form.responsavelId || undefined}
                 onValueChange={(v) =>
                   setForm((f) => ({ ...f, responsavelId: v ?? "" }))
                 }
@@ -747,7 +870,7 @@ export default function FinanceiroPage() {
             <div className="space-y-1.5">
               <Label>Forma de Pagamento</Label>
               <Select
-                value={form.formaPagamento}
+                value={form.formaPagamento || undefined}
                 onValueChange={(v) =>
                   setForm((f) => ({ ...f, formaPagamento: v ?? "" }))
                 }
@@ -769,7 +892,7 @@ export default function FinanceiroPage() {
             <div className="space-y-1.5">
               <Label>Conta Bancaria</Label>
               <Select
-                value={form.contaBancariaId}
+                value={form.contaBancariaId || undefined}
                 onValueChange={(v) =>
                   setForm((f) => ({ ...f, contaBancariaId: v ?? "" }))
                 }
