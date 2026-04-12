@@ -27,6 +27,8 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PencilIcon,
+  Trash2Icon,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────
@@ -113,6 +115,7 @@ export default function FinanceiroPage() {
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -230,7 +233,7 @@ export default function FinanceiroPage() {
     }
   }
 
-  // ── Create lancamento ─────────────────────────────────
+  // ── Create / Update lancamento ─────────────────────────
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -252,8 +255,13 @@ export default function FinanceiroPage() {
         responsavelId: form.responsavelId || null,
       };
 
-      const res = await fetch("/api/lancamentos", {
-        method: "POST",
+      const url = editingId
+        ? `/api/lancamentos/${editingId}`
+        : "/api/lancamentos";
+      const method = editingId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -264,13 +272,14 @@ export default function FinanceiroPage() {
         fetchLancamentos();
       }
     } catch (err) {
-      console.error("Erro ao criar lancamento:", err);
+      console.error("Erro ao salvar lancamento:", err);
     } finally {
       setSaving(false);
     }
   }
 
   function resetForm() {
+    setEditingId(null);
     setForm({
       descricao: "",
       valor: "",
@@ -283,6 +292,32 @@ export default function FinanceiroPage() {
       observacao: "",
       responsavelId: "",
     });
+  }
+
+  function editarLancamento(l: Lancamento) {
+    setEditingId(l.id);
+    setForm({
+      descricao: l.descricao,
+      valor: l.valor.toString(),
+      tipo: l.tipo,
+      natureza: l.natureza,
+      contaId: l.conta.id,
+      dataVencimento: l.dataVencimento.split("T")[0],
+      recorrente: l.recorrente,
+      diaVencimento: l.diaVencimento?.toString() || "",
+      observacao: l.observacao || "",
+      responsavelId: l.responsavel?.id || "",
+    });
+    setSheetOpen(true);
+  }
+
+  async function excluirLancamento(id: string) {
+    try {
+      const res = await fetch(`/api/lancamentos/${id}`, { method: "DELETE" });
+      if (res.ok) fetchLancamentos();
+    } catch (err) {
+      console.error("Erro ao excluir:", err);
+    }
   }
 
   // ── Filter helpers ────────────────────────────────────
@@ -360,7 +395,7 @@ export default function FinanceiroPage() {
             </div>
           </div>
 
-          {/* Value + action */}
+          {/* Value + actions */}
           <div className="flex flex-col items-end gap-2 shrink-0">
             <span
               className={`font-bold text-sm ${
@@ -371,17 +406,34 @@ export default function FinanceiroPage() {
               {formatCurrency(l.valor)}
             </span>
 
-            {l.status !== "PAGO" && (
+            <div className="flex gap-1">
+              {l.status !== "PAGO" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2 text-xs text-green-600"
+                  onClick={() => marcarComoPago(l.id)}
+                >
+                  <CheckIcon className="size-3.5" />
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3 text-xs"
-                onClick={() => marcarComoPago(l.id)}
+                className="h-8 px-2 text-xs"
+                onClick={() => editarLancamento(l)}
               >
-                <CheckIcon className="size-3.5 mr-1" />
-                Pagar
+                <PencilIcon className="size-3.5" />
               </Button>
-            )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-2 text-xs text-red-600"
+                onClick={() => excluirLancamento(l.id)}
+              >
+                <Trash2Icon className="size-3.5" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -509,17 +561,17 @@ export default function FinanceiroPage() {
       <Button
         className="fixed bottom-24 right-6 md:bottom-8 md:right-8 h-14 w-14 rounded-full shadow-lg z-40"
         size="icon"
-        onClick={() => setSheetOpen(true)}
+        onClick={() => { resetForm(); setSheetOpen(true); }}
       >
         <PlusIcon className="size-6" />
       </Button>
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) setEditingId(null); }}>
 
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl">
           <SheetHeader>
-            <SheetTitle>Novo Lancamento</SheetTitle>
+            <SheetTitle>{editingId ? "Editar Lancamento" : "Novo Lancamento"}</SheetTitle>
             <SheetDescription>
-              Registre uma nova receita ou despesa
+              {editingId ? "Altere os dados do lancamento" : "Registre uma nova receita ou despesa"}
             </SheetDescription>
           </SheetHeader>
 
@@ -740,7 +792,7 @@ export default function FinanceiroPage() {
               className="w-full h-12 text-base"
               disabled={saving}
             >
-              {saving ? "Salvando..." : "Salvar Lancamento"}
+              {saving ? "Salvando..." : editingId ? "Atualizar" : "Salvar Lancamento"}
             </Button>
           </form>
         </SheetContent>
