@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -15,8 +16,14 @@ const navItems = [
   { href: "/configuracoes", label: "Familia", emoji: "👨‍👩‍👧‍👦" },
 ];
 
+const adminItem = { href: "/admin", label: "Admin Plataforma", emoji: "🛡️" };
+
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isSuperAdmin = session?.user?.role === "superadmin";
+
+  const items = isSuperAdmin ? [...navItems, adminItem] : navItems;
 
   return (
     <aside className="hidden md:flex flex-col w-56 bg-white border-r border-gray-200 min-h-screen">
@@ -28,7 +35,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 p-2 space-y-1">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
           return (
