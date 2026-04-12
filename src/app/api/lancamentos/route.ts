@@ -48,6 +48,9 @@ export async function GET(req: NextRequest) {
       responsavel: {
         select: { id: true, nome: true, avatar: true },
       },
+      contaBancaria: {
+        select: { id: true, nome: true, icone: true },
+      },
     },
     orderBy: { dataVencimento: "desc" },
   });
@@ -75,6 +78,8 @@ export async function POST(req: NextRequest) {
     observacao,
     eventoId,
     responsavelId,
+    formaPagamento,
+    contaBancariaId,
   } = body;
 
   // Validation
@@ -134,6 +139,8 @@ export async function POST(req: NextRequest) {
       criadoPorId: user?.id || null,
       responsavelId: responsavelId || null,
       eventoId: eventoId || null,
+      formaPagamento: formaPagamento || null,
+      contaBancariaId: contaBancariaId || null,
     },
     include: {
       conta: {
@@ -141,6 +148,9 @@ export async function POST(req: NextRequest) {
       },
       responsavel: {
         select: { id: true, nome: true, avatar: true },
+      },
+      contaBancaria: {
+        select: { id: true, nome: true, icone: true },
       },
     },
   });

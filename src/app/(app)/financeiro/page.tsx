@@ -62,6 +62,14 @@ interface Lancamento {
   observacao: string | null;
   conta: Conta;
   responsavel?: { id: string; nome: string; avatar: string | null } | null;
+  formaPagamento?: string | null;
+  contaBancaria?: { id: string; nome: string; icone: string | null } | null;
+}
+
+interface ContaBancaria {
+  id: string;
+  nome: string;
+  icone: string | null;
 }
 
 interface ContaContabil {
@@ -91,6 +99,15 @@ const MESES = [
   "Dezembro",
 ];
 
+const FORMAS_PAGAMENTO = [
+  { value: "PIX", label: "\u{1F511} Pix" },
+  { value: "DEBITO", label: "\u{1F4B3} Debito" },
+  { value: "CREDITO", label: "\u{1F4B3} Credito" },
+  { value: "DINHEIRO", label: "\u{1F4B5} Dinheiro" },
+  { value: "TRANSFERENCIA", label: "\u{1F504} Transferencia" },
+  { value: "BOLETO", label: "\u{1F4C4} Boleto" },
+];
+
 function flattenContas(contas: ContaContabil[]): ContaContabil[] {
   const result: ContaContabil[] = [];
   function walk(list: ContaContabil[]) {
@@ -112,6 +129,7 @@ export default function FinanceiroPage() {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [contas, setContas] = useState<ContaContabil[]>([]);
   const [membros, setMembros] = useState<Membro[]>([]);
+  const [contasBancarias, setContasBancarias] = useState<ContaBancaria[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -129,6 +147,8 @@ export default function FinanceiroPage() {
     diaVencimento: "",
     observacao: "",
     responsavelId: "",
+    formaPagamento: "",
+    contaBancariaId: "",
   });
 
   const fetchLancamentos = useCallback(async () => {
@@ -160,6 +180,18 @@ export default function FinanceiroPage() {
     }
   }, []);
 
+  const fetchContasBancarias = useCallback(async () => {
+    try {
+      const res = await fetch("/api/contas-bancarias");
+      if (res.ok) {
+        const data = await res.json();
+        setContasBancarias(data);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar contas bancarias:", err);
+    }
+  }, []);
+
   const fetchMembros = useCallback(async () => {
     try {
       const res = await fetch("/api/familia/membros");
@@ -183,6 +215,10 @@ export default function FinanceiroPage() {
   useEffect(() => {
     fetchMembros();
   }, [fetchMembros]);
+
+  useEffect(() => {
+    fetchContasBancarias();
+  }, [fetchContasBancarias]);
 
   // ── Summary ───────────────────────────────────────────
 
@@ -253,6 +289,8 @@ export default function FinanceiroPage() {
           : null,
         observacao: form.observacao || null,
         responsavelId: form.responsavelId || null,
+        formaPagamento: form.formaPagamento || null,
+        contaBancariaId: form.contaBancariaId || null,
       };
 
       const url = editingId
@@ -291,6 +329,8 @@ export default function FinanceiroPage() {
       diaVencimento: "",
       observacao: "",
       responsavelId: "",
+      formaPagamento: "",
+      contaBancariaId: "",
     });
   }
 
@@ -307,6 +347,8 @@ export default function FinanceiroPage() {
       diaVencimento: l.diaVencimento?.toString() || "",
       observacao: l.observacao || "",
       responsavelId: l.responsavel?.id || "",
+      formaPagamento: l.formaPagamento || "",
+      contaBancariaId: l.contaBancaria?.id || "",
     });
     setSheetOpen(true);
   }
@@ -388,6 +430,20 @@ export default function FinanceiroPage() {
                 {l.responsavel.nome}{" "}
                 {l.tipo === "RECEITA" ? "recebeu" : "pagou"}
               </p>
+            )}
+            {(l.formaPagamento || l.contaBancaria) && (
+              <div className="flex gap-1.5 mt-1">
+                {l.formaPagamento && (
+                  <Badge variant="outline" className="text-xs">
+                    {FORMAS_PAGAMENTO.find((fp) => fp.value === l.formaPagamento)?.label || l.formaPagamento}
+                  </Badge>
+                )}
+                {l.contaBancaria && (
+                  <Badge variant="outline" className="text-xs">
+                    {l.contaBancaria.icone || "\u{1F3E6}"} {l.contaBancaria.nome}
+                  </Badge>
+                )}
+              </div>
             )}
             <div className="flex gap-1.5 mt-1.5">
               <StatusBadge status={l.status} />
@@ -681,6 +737,50 @@ export default function FinanceiroPage() {
                   {membros.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.avatar || "\u{1F464}"} {m.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Forma de Pagamento */}
+            <div className="space-y-1.5">
+              <Label>Forma de Pagamento</Label>
+              <Select
+                value={form.formaPagamento}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, formaPagamento: v ?? "" }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione a forma de pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FORMAS_PAGAMENTO.map((fp) => (
+                    <SelectItem key={fp.value} value={fp.value}>
+                      {fp.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Conta Bancaria */}
+            <div className="space-y-1.5">
+              <Label>Conta Bancaria</Label>
+              <Select
+                value={form.contaBancariaId}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, contaBancariaId: v ?? "" }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione a conta bancaria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contasBancarias.map((cb) => (
+                    <SelectItem key={cb.id} value={cb.id}>
+                      {cb.icone || "\u{1F3E6}"} {cb.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>

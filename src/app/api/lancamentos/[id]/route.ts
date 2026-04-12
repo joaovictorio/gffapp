@@ -39,6 +39,8 @@ export async function PUT(
     observacao,
     status,
     responsavelId,
+    formaPagamento,
+    contaBancariaId,
   } = body;
 
   // Build update data with only provided fields
@@ -66,6 +68,8 @@ export async function PUT(
   if (diaVencimento !== undefined) updateData.diaVencimento = diaVencimento;
   if (observacao !== undefined) updateData.observacao = observacao;
   if (responsavelId !== undefined) updateData.responsavelId = responsavelId || null;
+  if (formaPagamento !== undefined) updateData.formaPagamento = formaPagamento || null;
+  if (contaBancariaId !== undefined) updateData.contaBancariaId = contaBancariaId || null;
 
   // Handle status change - when marking as PAGO, set dataPagamento
   if (status !== undefined) {
@@ -86,6 +90,9 @@ export async function PUT(
       },
       responsavel: {
         select: { id: true, nome: true, avatar: true },
+      },
+      contaBancaria: {
+        select: { id: true, nome: true, icone: true },
       },
     },
   });

@@ -24,6 +24,7 @@ model Tenant {
   eventos           Evento[]
   eventoItens       EventoItem[]
   planosFinanceiros PlanoFinanceiro[]
+  contasBancarias   ContaBancaria[]
 }
 
 model User {
@@ -92,17 +93,44 @@ model Lancamento {
   observacao     String?
   criadoPorId    String?
   criadoPor      User?     @relation("LancamentoCriador", fields: [criadoPorId], references: [id])
-  responsavelId  String?
-  responsavel    User?     @relation("LancamentoResponsavel", fields: [responsavelId], references: [id])
-  eventoId       String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  responsavelId    String?
+  responsavel      User?     @relation("LancamentoResponsavel", fields: [responsavelId], references: [id])
+  formaPagamento   String?   // "PIX" | "DEBITO" | "CREDITO" | "DINHEIRO" | "TRANSFERENCIA" | "BOLETO"
+  contaBancariaId  String?
+  contaBancaria    ContaBancaria? @relation(fields: [contaBancariaId], references: [id])
+  eventoId         String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([tenantId])
   @@index([tenantId, dataVencimento])
   @@index([contaId])
   @@index([eventoId])
   @@index([responsavelId])
+  @@index([contaBancariaId])
+}
+
+// ============ CONTAS BANCARIAS ============
+
+model ContaBancaria {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nome        String   // "Nubank", "Itau", "Carteira"
+  tipo        String   // "CORRENTE" | "POUPANCA" | "CARTEIRA" | "OUTRO"
+  banco       String?  // nome do banco
+  agencia     String?
+  numeroConta String?
+  saldoInicial Float   @default(0)
+  icone       String?  // emoji
+  cor         String?
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lancamentos Lancamento[]
+
+  @@index([tenantId])
 }
 
 // ============ ANIVERSARIOS ============

@@ -9,7 +9,7 @@ const navItems = [
   { href: "/financeiro", label: "Dinheiro", emoji: "💰" },
   { href: "/aniversarios", label: "Festas", emoji: "🎂" },
   { href: "/eventos", label: "Eventos", emoji: "📅" },
-  { href: "/configuracoes", label: "Familia", emoji: "👨‍👩‍👧‍👦" },
+  { href: "/contas-bancarias", label: "Contas", emoji: "🏦" },
 ];
 
 export default function BottomNav() {

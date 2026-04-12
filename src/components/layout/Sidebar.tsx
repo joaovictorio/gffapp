@@ -8,6 +8,7 @@ const navItems = [
   { href: "/painel", label: "Inicio", emoji: "🏠" },
   { href: "/financeiro", label: "Dinheiro", emoji: "💰" },
   { href: "/plano-financeiro", label: "Plano Financeiro", emoji: "📊" },
+  { href: "/contas-bancarias", label: "Contas Bancarias", emoji: "🏦" },
   { href: "/plano-de-contas", label: "Plano de Contas", emoji: "📋" },
   { href: "/aniversarios", label: "Aniversarios", emoji: "🎂" },
   { href: "/eventos", label: "Eventos", emoji: "📅" },
