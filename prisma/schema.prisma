@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============ TENANT & AUTH ============
+
+model Tenant {
+  id        String   @id @default(uuid())
+  nome      String
+  codigo    String   @unique // 6-char invite code
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarios     User[]
+  planoContas  ContaContabil[]
+  lancamentos  Lancamento[]
+  aniversarios Aniversario[]
+  eventos      Evento[]
+  eventoItens  EventoItem[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nome      String
+  email     String   @unique
+  senhaHash String
+  avatar    String?
+  role      String   @default("membro")
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lancamentos Lancamento[]
+
+  @@index([tenantId])
+}
+
+// ============ PLANO DE CONTAS ============
+
+model ContaContabil {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  codigo    String
+  nome      String
+  tipo      String   // "RECEITA" | "DESPESA"
+  parentId  String?
+  parent    ContaContabil?  @relation("ContaHierarquia", fields: [parentId], references: [id])
+  filhos    ContaContabil[] @relation("ContaHierarquia")
+  icone     String?
+  cor       String?
+  ordem     Int      @default(0)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  lancamentos Lancamento[]
+  eventoItens EventoItem[]
+
+  @@unique([tenantId, codigo])
+  @@index([tenantId])
+  @@index([parentId])
+}
+
+// ============ CONTROLE FINANCEIRO ============
+
+model Lancamento {
+  id             String    @id @default(uuid())
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contaId        String
+  conta          ContaContabil @relation(fields: [contaId], references: [id])
+  descricao      String
+  valor          Float
+  tipo           String    // "RECEITA" | "DESPESA"
+  natureza       String    // "FIXO" | "VARIAVEL"
+  recorrente     Boolean   @default(false)
+  diaVencimento  Int?
+  dataVencimento DateTime
+  dataPagamento  DateTime?
+  status         String    @default("PENDENTE")
+  observacao     String?
+  criadoPorId    String?
+  criadoPor      User?     @relation(fields: [criadoPorId], references: [id])
+  eventoId       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, dataVencimento])
+  @@index([contaId])
+  @@index([eventoId])
+}
+
+// ============ ANIVERSARIOS ============
+
+model Aniversario {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nome         String
+  data         DateTime
+  anoConhecido Boolean  @default(true)
+  parentesco   String?
+  telefone     String?
+  observacao   String?
+  icone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// ============ EVENTOS / PROGRAMACOES ============
+
+model Evento {
+  id                String    @id @default(uuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  titulo            String
+  descricao         String?
+  tipo              String    // "VIAGEM" | "FESTA" | "CASAMENTO" | "OUTRO"
+  dataInicio        DateTime
+  dataFim           DateTime?
+  local             String?
+  status            String    @default("PLANEJANDO")
+  orcamentoPrevisto Float     @default(0)
+  icone             String?
+  cor               String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  itens EventoItem[]
+
+  @@index([tenantId])
+}
+
+model EventoItem {
+  id            String          @id @default(uuid())
+  tenantId      String
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  eventoId      String
+  evento        Evento          @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  contaId       String?
+  conta         ContaContabil?  @relation(fields: [contaId], references: [id])
+  descricao     String
+  valorEstimado Float           @default(0)
+  valorReal     Float?
+  status        String          @default("PENDENTE")
+  ordem         Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([eventoId])
+  @@index([tenantId])
+}
