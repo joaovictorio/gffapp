@@ -10,10 +10,8 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ["/login", "/registro", "/convite"];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
   const isApiAuth = pathname.startsWith("/api/auth");
-  const isAdminSeed = pathname.startsWith("/api/admin/seed-superadmin");
-
-  // Allow public routes, auth API, and admin seed
-  if (isPublicRoute || isApiAuth || isAdminSeed) {
+  // Allow public routes and auth API
+  if (isPublicRoute || isApiAuth) {
     // Redirect to painel if already logged in
     if (token && isPublicRoute) {
       return NextResponse.redirect(new URL("/painel", request.url));
