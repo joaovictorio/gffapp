@@ -46,17 +46,25 @@ export async function GET() {
   const pendentes = lancamentos.filter((l) => l.status === "PENDENTE").length;
   const atrasados = lancamentos.filter((l) => l.status === "ATRASADO").length;
 
-  // Expenses by category
+  // Get root categories (parentId is null) to use their names for grouping
+  const categoriasRaiz = await prisma.contaContabil.findMany({
+    where: { tenantId, parentId: null, tipo: "DESPESA" },
+    select: { codigo: true, nome: true, icone: true, cor: true },
+  });
+  const raizMap = new Map(categoriasRaiz.map((c) => [c.codigo, c]));
+
+  // Expenses by root category - using parent name, not sub-category name
   const despesasPorCategoria = lancamentos
     .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO")
     .reduce(
       (acc, l) => {
         const key = l.conta.codigo.split(".")[0];
         if (!acc[key]) {
+          const raiz = raizMap.get(key);
           acc[key] = {
-            conta: l.conta.nome,
-            icone: l.conta.icone || "📌",
-            cor: l.conta.cor || "#6B7280",
+            conta: raiz?.nome || l.conta.nome,
+            icone: raiz?.icone || l.conta.icone || "📌",
+            cor: raiz?.cor || l.conta.cor || "#6B7280",
             total: 0,
           };
         }
