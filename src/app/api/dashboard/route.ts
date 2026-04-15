@@ -24,11 +24,23 @@ export async function GET() {
   });
 
   const totalReceitas = lancamentos
-    .filter((l) => l.tipo === "RECEITA")
+    .filter((l) => l.tipo === "RECEITA" && l.status === "PAGO")
     .reduce((sum, l) => sum + l.valor, 0);
 
   const totalDespesas = lancamentos
-    .filter((l) => l.tipo === "DESPESA")
+    .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO")
+    .reduce((sum, l) => sum + l.valor, 0);
+
+  const provisoes = lancamentos
+    .filter((l) => l.status !== "PAGO")
+    .reduce((sum, l) => sum + l.valor, 0);
+
+  const provisoesDespesa = lancamentos
+    .filter((l) => l.tipo === "DESPESA" && l.status !== "PAGO")
+    .reduce((sum, l) => sum + l.valor, 0);
+
+  const provisoesReceita = lancamentos
+    .filter((l) => l.tipo === "RECEITA" && l.status !== "PAGO")
     .reduce((sum, l) => sum + l.valor, 0);
 
   const pendentes = lancamentos.filter((l) => l.status === "PENDENTE").length;
@@ -99,6 +111,9 @@ export async function GET() {
       totalReceitas,
       totalDespesas,
       saldo: totalReceitas - totalDespesas,
+      provisoes,
+      provisoesDespesa,
+      provisoesReceita,
     },
     despesasPorCategoria: Object.values(despesasPorCategoria),
     proximosAniversarios,

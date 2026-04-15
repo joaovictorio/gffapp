@@ -12,6 +12,8 @@ interface DashboardData {
     totalReceitas: number;
     totalDespesas: number;
     saldo: number;
+    provisoesDespesa: number;
+    provisoesReceita: number;
   };
   despesasPorCategoria: Array<{
     conta: string;
@@ -69,7 +71,7 @@ export default function PainelPage() {
         <Card className="bg-green-50 border-green-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-green-600 font-medium">
-              💰 Dinheiro que entrou
+              💰 Recebido
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -82,7 +84,7 @@ export default function PainelPage() {
         <Card className="bg-red-50 border-red-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-red-600 font-medium">
-              💸 Dinheiro que saiu
+              💸 Pago
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -102,6 +104,37 @@ export default function PainelPage() {
             <p className="text-2xl font-bold text-blue-700">
               {formatCurrency(dados?.resumoMes.saldo ?? 0)}
             </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Provisoes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card className="bg-orange-50 border-orange-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-orange-600 font-medium">
+              📋 Contas a Pagar
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-orange-700">
+              {formatCurrency(dados?.resumoMes.provisoesDespesa ?? 0)}
+            </p>
+            <p className="text-xs text-orange-500 mt-1">Pendentes e atrasadas</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-cyan-50 border-cyan-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-cyan-600 font-medium">
+              📋 A Receber
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-cyan-700">
+              {formatCurrency(dados?.resumoMes.provisoesReceita ?? 0)}
+            </p>
+            <p className="text-xs text-cyan-500 mt-1">Pendentes e atrasadas</p>
           </CardContent>
         </Card>
       </div>

@@ -70,6 +70,11 @@ interface Lancamento {
   responsavel?: { id: string; nome: string; avatar: string | null } | null;
   formaPagamento?: string | null;
   contaBancaria?: { id: string; nome: string; icone: string | null } | null;
+  codigoBarras?: string | null;
+  multa?: number | null;
+  juros?: number | null;
+  contaBancariaId?: string | null;
+  responsavelId?: string | null;
 }
 
 interface ContaBancaria {
@@ -155,6 +160,9 @@ export default function FinanceiroPage() {
     responsavelId: "",
     formaPagamento: "",
     contaBancariaId: "",
+    codigoBarras: "",
+    multa: "",
+    juros: "",
   });
 
   const fetchLancamentos = useCallback(async () => {
@@ -270,13 +278,13 @@ export default function FinanceiroPage() {
   });
   const [quitarSaving, setQuitarSaving] = useState(false);
 
-  function abrirQuitar(id: string) {
-    setQuitarId(id);
+  function abrirQuitar(l: Lancamento) {
+    setQuitarId(l.id);
     setQuitarForm({
       dataPagamento: new Date().toISOString().split("T")[0],
-      formaPagamento: "",
-      contaBancariaId: "",
-      responsavelId: "",
+      formaPagamento: l.formaPagamento || "",
+      contaBancariaId: l.contaBancariaId || "",
+      responsavelId: l.responsavelId || "",
     });
     setQuitarOpen(true);
   }
@@ -329,6 +337,9 @@ export default function FinanceiroPage() {
         responsavelId: form.responsavelId || null,
         formaPagamento: form.formaPagamento || null,
         contaBancariaId: form.contaBancariaId || null,
+        codigoBarras: form.codigoBarras || null,
+        multa: form.multa ? parseFloat(form.multa) : 0,
+        juros: form.juros ? parseFloat(form.juros) : 0,
       };
 
       const url = editingId
@@ -369,6 +380,9 @@ export default function FinanceiroPage() {
       responsavelId: "",
       formaPagamento: "",
       contaBancariaId: "",
+      codigoBarras: "",
+      multa: "",
+      juros: "",
     });
   }
 
@@ -387,6 +401,9 @@ export default function FinanceiroPage() {
       responsavelId: l.responsavel?.id || "",
       formaPagamento: l.formaPagamento || "",
       contaBancariaId: l.contaBancaria?.id || "",
+      codigoBarras: l.codigoBarras || "",
+      multa: l.multa ? l.multa.toString() : "",
+      juros: l.juros ? l.juros.toString() : "",
     });
     setSheetOpen(true);
   }
@@ -499,6 +516,12 @@ export default function FinanceiroPage() {
               {l.tipo === "RECEITA" ? "+" : "-"}{" "}
               {formatCurrency(l.valor)}
             </span>
+            {(l.multa || l.juros) && (
+              <span className="text-xs text-orange-600">
+                {l.multa ? `Multa: ${formatCurrency(l.multa)} ` : ""}
+                {l.juros ? `Juros: ${formatCurrency(l.juros)}` : ""}
+              </span>
+            )}
 
             <div className="flex gap-1">
               {l.status !== "PAGO" && (
@@ -506,7 +529,7 @@ export default function FinanceiroPage() {
                   variant="outline"
                   size="sm"
                   className="h-8 px-2 text-xs text-green-600"
-                  onClick={() => abrirQuitar(l.id)}
+                  onClick={() => abrirQuitar(l)}
                 >
                   <CheckIcon className="size-3.5" />
                 </Button>
@@ -1007,6 +1030,48 @@ export default function FinanceiroPage() {
                   setForm((f) => ({ ...f, observacao: e.target.value }))
                 }
               />
+            </div>
+
+            {/* Codigo de Barras (only for DESPESA) */}
+            {form.tipo === "DESPESA" && (
+              <div className="space-y-1.5">
+                <Label>Codigo de Barras</Label>
+                <Input
+                  placeholder="Cole o codigo de barras do boleto"
+                  value={form.codigoBarras}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, codigoBarras: e.target.value }))
+                  }
+                />
+              </div>
+            )}
+
+            {/* Multa e Juros */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label>Multa (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.multa}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, multa: e.target.value }))
+                  }
+                  placeholder="0,00"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Juros (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.juros}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, juros: e.target.value }))
+                  }
+                  placeholder="0,00"
+                />
+              </div>
             </div>
 
             {/* Submit */}

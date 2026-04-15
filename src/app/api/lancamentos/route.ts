@@ -80,6 +80,9 @@ export async function POST(req: NextRequest) {
     responsavelId,
     formaPagamento,
     contaBancariaId,
+    codigoBarras,
+    multa,
+    juros,
   } = body;
 
   // Validation
@@ -141,6 +144,9 @@ export async function POST(req: NextRequest) {
       eventoId: eventoId || null,
       formaPagamento: formaPagamento || null,
       contaBancariaId: contaBancariaId || null,
+      codigoBarras: codigoBarras || null,
+      multa: multa ?? 0,
+      juros: juros ?? 0,
     },
     include: {
       conta: {

@@ -41,6 +41,10 @@ export async function PUT(
     responsavelId,
     formaPagamento,
     contaBancariaId,
+    codigoBarras,
+    multa,
+    juros,
+    dataPagamento,
   } = body;
 
   // Build update data with only provided fields
@@ -70,12 +74,17 @@ export async function PUT(
   if (responsavelId !== undefined) updateData.responsavelId = responsavelId || null;
   if (formaPagamento !== undefined) updateData.formaPagamento = formaPagamento || null;
   if (contaBancariaId !== undefined) updateData.contaBancariaId = contaBancariaId || null;
+  if (codigoBarras !== undefined) updateData.codigoBarras = codigoBarras || null;
+  if (multa !== undefined) updateData.multa = multa;
+  if (juros !== undefined) updateData.juros = juros;
 
   // Handle status change - when marking as PAGO, set dataPagamento
   if (status !== undefined) {
     updateData.status = status;
     if (status === "PAGO") {
-      updateData.dataPagamento = new Date();
+      updateData.dataPagamento = dataPagamento
+        ? new Date(dataPagamento + "T12:00:00")
+        : new Date();
     } else {
       updateData.dataPagamento = null;
     }
