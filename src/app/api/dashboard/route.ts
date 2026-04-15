@@ -48,7 +48,7 @@ export async function GET() {
 
   // Expenses by category
   const despesasPorCategoria = lancamentos
-    .filter((l) => l.tipo === "DESPESA")
+    .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO")
     .reduce(
       (acc, l) => {
         const key = l.conta.codigo.split(".")[0];
