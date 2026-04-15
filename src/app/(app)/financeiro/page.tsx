@@ -237,11 +237,11 @@ export default function FinanceiroPage() {
   // ── Summary ───────────────────────────────────────────
 
   const totalReceitas = lancamentos
-    .filter((l) => l.tipo === "RECEITA")
+    .filter((l) => l.tipo === "RECEITA" && l.status === "PAGO")
     .reduce((acc, l) => acc + l.valor, 0);
 
   const totalDespesas = lancamentos
-    .filter((l) => l.tipo === "DESPESA")
+    .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO")
     .reduce((acc, l) => acc + l.valor, 0);
 
   const saldo = totalReceitas - totalDespesas;
