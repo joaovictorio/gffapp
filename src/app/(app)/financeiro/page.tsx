@@ -706,7 +706,9 @@ export default function FinanceiroPage() {
                 onValueChange={(v) => setQuitarForm((f) => ({ ...f, formaPagamento: v ?? "" }))}
               >
                 <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Selecione..." />
+                  <SelectValue placeholder="Selecione...">
+                    {quitarForm.formaPagamento ? FORMAS_PAGAMENTO.find(x => x.value === quitarForm.formaPagamento)?.label : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {FORMAS_PAGAMENTO.map((fp) => (
@@ -725,7 +727,9 @@ export default function FinanceiroPage() {
                 onValueChange={(v) => setQuitarForm((f) => ({ ...f, contaBancariaId: v ?? "" }))}
               >
                 <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Selecione..." />
+                  <SelectValue placeholder="Selecione...">
+                    {quitarForm.contaBancariaId ? (() => { const cb = contasBancarias.find(x => x.id === quitarForm.contaBancariaId); return cb ? `${cb.icone || "🏦"} ${cb.nome}` : undefined; })() : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {contasBancarias.map((cb) => (
@@ -744,7 +748,9 @@ export default function FinanceiroPage() {
                 onValueChange={(v) => setQuitarForm((f) => ({ ...f, responsavelId: v ?? "" }))}
               >
                 <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Selecione..." />
+                  <SelectValue placeholder="Selecione...">
+                    {quitarForm.responsavelId ? (() => { const m = membros.find(x => x.id === quitarForm.responsavelId); return m ? `${m.avatar || "👤"} ${m.nome}` : undefined; })() : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {membros.map((m) => (
@@ -848,7 +854,9 @@ export default function FinanceiroPage() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione uma categoria" />
+                  <SelectValue placeholder="Selecione uma categoria">
+                    {form.contaId ? (() => { const c = flat.find(x => x.id === form.contaId); return c ? `${c.icone || "📋"} ${c.nome}` : undefined; })() : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {flat
@@ -877,12 +885,14 @@ export default function FinanceiroPage() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione um membro" />
+                  <SelectValue placeholder="Selecione um membro">
+                    {form.responsavelId ? (() => { const m = membros.find(x => x.id === form.responsavelId); return m ? `${m.avatar || "👤"} ${m.nome}` : undefined; })() : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {membros.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
-                      {m.avatar || "\u{1F464}"} {m.nome}
+                      {m.avatar || "👤"} {m.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -899,7 +909,9 @@ export default function FinanceiroPage() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione a forma de pagamento" />
+                  <SelectValue placeholder="Selecione a forma de pagamento">
+                    {form.formaPagamento ? FORMAS_PAGAMENTO.find(x => x.value === form.formaPagamento)?.label : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {FORMAS_PAGAMENTO.map((fp) => (
@@ -921,12 +933,14 @@ export default function FinanceiroPage() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione a conta bancaria" />
+                  <SelectValue placeholder="Selecione a conta bancaria">
+                    {form.contaBancariaId ? (() => { const cb = contasBancarias.find(x => x.id === form.contaBancariaId); return cb ? `${cb.icone || "🏦"} ${cb.nome}` : undefined; })() : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {contasBancarias.map((cb) => (
                     <SelectItem key={cb.id} value={cb.id}>
-                      {cb.icone || "\u{1F3E6}"} {cb.nome}
+                      {cb.icone || "🏦"} {cb.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
