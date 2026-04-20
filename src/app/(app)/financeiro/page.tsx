@@ -163,6 +163,8 @@ export default function FinanceiroPage() {
     codigoBarras: "",
     multa: "",
     juros: "",
+    jaQuitado: false,
+    dataPagamento: "",
   });
 
   const fetchLancamentos = useCallback(async () => {
@@ -246,6 +248,10 @@ export default function FinanceiroPage() {
 
   const saldo = totalReceitas - totalDespesas;
 
+  const totalPagos = lancamentos.filter((l) => l.status === "PAGO").length;
+  const totalPendentes = lancamentos.filter((l) => l.status === "PENDENTE").length;
+  const totalAtrasados = lancamentos.filter((l) => l.status === "ATRASADO").length;
+
   // ── Month navigation ──────────────────────────────────
 
   function prevMonth() {
@@ -322,7 +328,7 @@ export default function FinanceiroPage() {
     setSaving(true);
 
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         descricao: form.descricao,
         valor: parseFloat(form.valor.replace(",", ".")),
         tipo: form.tipo,
@@ -341,6 +347,11 @@ export default function FinanceiroPage() {
         multa: form.multa ? parseFloat(form.multa) : 0,
         juros: form.juros ? parseFloat(form.juros) : 0,
       };
+
+      if (form.jaQuitado) {
+        payload.status = "PAGO";
+        payload.dataPagamento = form.dataPagamento || form.dataVencimento;
+      }
 
       const url = editingId
         ? `/api/lancamentos/${editingId}`
@@ -383,6 +394,8 @@ export default function FinanceiroPage() {
       codigoBarras: "",
       multa: "",
       juros: "",
+      jaQuitado: false,
+      dataPagamento: "",
     });
   }
 
@@ -404,6 +417,8 @@ export default function FinanceiroPage() {
       codigoBarras: l.codigoBarras || "",
       multa: l.multa ? l.multa.toString() : "",
       juros: l.juros ? l.juros.toString() : "",
+      jaQuitado: l.status === "PAGO",
+      dataPagamento: l.dataPagamento ? l.dataPagamento.split("T")[0] : "",
     });
     setSheetOpen(true);
   }
@@ -621,6 +636,23 @@ export default function FinanceiroPage() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Status counters */}
+      <div className="flex gap-3 flex-wrap">
+        <Badge className="bg-green-100 text-green-800 text-sm py-1 px-3">
+          ✅ {totalPagos} pago{totalPagos !== 1 ? "s" : ""}
+        </Badge>
+        {totalPendentes > 0 && (
+          <Badge className="bg-yellow-100 text-yellow-800 text-sm py-1 px-3">
+            🕐 {totalPendentes} pendente{totalPendentes !== 1 ? "s" : ""}
+          </Badge>
+        )}
+        {totalAtrasados > 0 && (
+          <Badge className="bg-red-100 text-red-800 text-sm py-1 px-3">
+            ⚠️ {totalAtrasados} atrasado{totalAtrasados !== 1 ? "s" : ""}
+          </Badge>
+        )}
       </div>
 
       {/* Tabs */}
@@ -1086,6 +1118,40 @@ export default function FinanceiroPage() {
                   placeholder="0,00"
                 />
               </div>
+            </div>
+
+            {/* Ja quitado */}
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 space-y-3">
+              <div className="flex items-center gap-3">
+                <input
+                  id="jaQuitado"
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 accent-green-600"
+                  checked={form.jaQuitado}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      jaQuitado: e.target.checked,
+                      dataPagamento: e.target.checked && !f.dataPagamento
+                        ? new Date().toISOString().split("T")[0]
+                        : f.dataPagamento,
+                    }))
+                  }
+                />
+                <Label htmlFor="jaQuitado" className="cursor-pointer text-green-700 font-medium">
+                  ✅ Ja esta quitado
+                </Label>
+              </div>
+              {form.jaQuitado && (
+                <div className="space-y-1.5">
+                  <Label>Data do Pagamento</Label>
+                  <Input
+                    type="date"
+                    value={form.dataPagamento}
+                    onChange={(e) => setForm((f) => ({ ...f, dataPagamento: e.target.value }))}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Submit */}
