@@ -434,8 +434,13 @@ export default function FinanceiroPage() {
 
   // ── Filter helpers ────────────────────────────────────
 
-  const despesas = lancamentos.filter((l) => l.tipo === "DESPESA");
-  const receitas = lancamentos.filter((l) => l.tipo === "RECEITA");
+  const [filtroStatus, setFiltroStatus] = useState<string>("TODOS");
+
+  const lancamentosFiltrados = filtroStatus === "TODOS"
+    ? lancamentos
+    : lancamentos.filter((l) => l.status === filtroStatus);
+  const despesas = lancamentosFiltrados.filter((l) => l.tipo === "DESPESA");
+  const receitas = lancamentosFiltrados.filter((l) => l.tipo === "RECEITA");
   const flat = flattenContas(contas);
 
   // ── Status badge ──────────────────────────────────────
@@ -638,20 +643,41 @@ export default function FinanceiroPage() {
         </Card>
       </div>
 
-      {/* Status counters */}
-      <div className="flex gap-3 flex-wrap">
-        <Badge className="bg-green-100 text-green-800 text-sm py-1 px-3">
-          ✅ {totalPagos} pago{totalPagos !== 1 ? "s" : ""}
-        </Badge>
-        {totalPendentes > 0 && (
-          <Badge className="bg-yellow-100 text-yellow-800 text-sm py-1 px-3">
-            🕐 {totalPendentes} pendente{totalPendentes !== 1 ? "s" : ""}
-          </Badge>
-        )}
+      {/* Status filter */}
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          variant={filtroStatus === "TODOS" ? "default" : "outline"}
+          size="sm"
+          className="h-9 rounded-full"
+          onClick={() => setFiltroStatus("TODOS")}
+        >
+          Todos ({lancamentos.length})
+        </Button>
+        <Button
+          variant={filtroStatus === "PENDENTE" ? "default" : "outline"}
+          size="sm"
+          className={`h-9 rounded-full ${filtroStatus === "PENDENTE" ? "bg-yellow-500 hover:bg-yellow-600" : ""}`}
+          onClick={() => setFiltroStatus("PENDENTE")}
+        >
+          🕐 Pendentes ({totalPendentes})
+        </Button>
+        <Button
+          variant={filtroStatus === "PAGO" ? "default" : "outline"}
+          size="sm"
+          className={`h-9 rounded-full ${filtroStatus === "PAGO" ? "bg-green-600 hover:bg-green-700" : ""}`}
+          onClick={() => setFiltroStatus("PAGO")}
+        >
+          ✅ Pagos ({totalPagos})
+        </Button>
         {totalAtrasados > 0 && (
-          <Badge className="bg-red-100 text-red-800 text-sm py-1 px-3">
-            ⚠️ {totalAtrasados} atrasado{totalAtrasados !== 1 ? "s" : ""}
-          </Badge>
+          <Button
+            variant={filtroStatus === "ATRASADO" ? "default" : "outline"}
+            size="sm"
+            className={`h-9 rounded-full ${filtroStatus === "ATRASADO" ? "bg-red-600 hover:bg-red-700" : ""}`}
+            onClick={() => setFiltroStatus("ATRASADO")}
+          >
+            ⚠️ Atrasados ({totalAtrasados})
+          </Button>
         )}
       </div>
 
@@ -668,12 +694,12 @@ export default function FinanceiroPage() {
             <p className="text-center text-muted-foreground py-8">
               Carregando...
             </p>
-          ) : lancamentos.length === 0 ? (
+          ) : lancamentosFiltrados.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Nenhum lancamento neste mes
+              Nenhum lancamento {filtroStatus !== "TODOS" ? "com esse filtro" : "neste mes"}
             </p>
           ) : (
-            lancamentos.map((l) => <LancamentoCard key={l.id} l={l} />)
+            lancamentosFiltrados.map((l) => <LancamentoCard key={l.id} l={l} />)
           )}
         </TabsContent>
 
