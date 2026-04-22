@@ -240,11 +240,11 @@ export default function FinanceiroPage() {
 
   const totalReceitas = lancamentos
     .filter((l) => l.tipo === "RECEITA" && l.status === "PAGO")
-    .reduce((acc, l) => acc + l.valor, 0);
+    .reduce((acc, l) => acc + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
   const totalDespesas = lancamentos
     .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO")
-    .reduce((acc, l) => acc + l.valor, 0);
+    .reduce((acc, l) => acc + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
   const saldo = totalReceitas - totalDespesas;
 
@@ -528,14 +528,26 @@ export default function FinanceiroPage() {
 
           {/* Value + actions */}
           <div className="flex flex-col items-end gap-2 shrink-0">
-            <span
-              className={`font-bold text-sm ${
-                l.tipo === "RECEITA" ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {l.tipo === "RECEITA" ? "+" : "-"}{" "}
-              {formatCurrency(l.valor)}
-            </span>
+            {(() => {
+              const valorTotal = l.valor + (l.multa || 0) + (l.juros || 0);
+              const temAcrescimo = (l.multa || 0) + (l.juros || 0) > 0;
+              return (
+                <div className="flex flex-col items-end">
+                  <span
+                    className={`font-bold text-sm ${
+                      l.tipo === "RECEITA" ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {l.tipo === "RECEITA" ? "+" : "-"} {formatCurrency(valorTotal)}
+                  </span>
+                  {temAcrescimo && (
+                    <span className="text-[10px] text-gray-400 line-through">
+                      {formatCurrency(l.valor)}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
             {(l.multa || l.juros) && (
               <span className="text-xs text-orange-600">
                 {l.multa ? `Multa: ${formatCurrency(l.multa)} ` : ""}

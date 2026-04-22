@@ -15,7 +15,7 @@ export async function GET() {
     include: {
       lancamentos: {
         where: { status: "PAGO" },
-        select: { valor: true, tipo: true },
+        select: { valor: true, tipo: true, multa: true, juros: true },
       },
     },
   });
@@ -23,11 +23,11 @@ export async function GET() {
   const result = contas.map((conta) => {
     const somaReceitas = conta.lancamentos
       .filter((l) => l.tipo === "RECEITA")
-      .reduce((sum, l) => sum + l.valor, 0);
+      .reduce((sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
     const somaDespesas = conta.lancamentos
       .filter((l) => l.tipo === "DESPESA")
-      .reduce((sum, l) => sum + l.valor, 0);
+      .reduce((sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
     const saldoAtual = conta.saldoInicial + somaReceitas - somaDespesas;
 

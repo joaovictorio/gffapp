@@ -25,11 +25,11 @@ export async function GET() {
 
   const totalReceitas = lancamentos
     .filter((l) => l.tipo === "RECEITA" && l.status === "PAGO")
-    .reduce((sum, l) => sum + l.valor, 0);
+    .reduce((sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
   const totalDespesas = lancamentos
     .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO")
-    .reduce((sum, l) => sum + l.valor, 0);
+    .reduce((sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
   const provisoes = lancamentos
     .filter((l) => l.status !== "PAGO")
@@ -68,7 +68,7 @@ export async function GET() {
             total: 0,
           };
         }
-        acc[key].total += l.valor;
+        acc[key].total += l.valor + (l.multa || 0) + (l.juros || 0);
         return acc;
       },
       {} as Record<string, { conta: string; icone: string; cor: string; total: number }>
