@@ -83,6 +83,8 @@ export async function POST(req: NextRequest) {
     codigoBarras,
     multa,
     juros,
+    status,
+    dataPagamento,
   } = body;
 
   // Validation
@@ -126,6 +128,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const statusFinal =
+    status === "PAGO" || status === "ATRASADO" ? status : "PENDENTE";
+  const dataPagamentoFinal =
+    statusFinal === "PAGO"
+      ? dataPagamento
+        ? new Date(dataPagamento + "T12:00:00")
+        : new Date()
+      : null;
+
   const lancamento = await prisma.lancamento.create({
     data: {
       tenantId,
@@ -137,7 +148,8 @@ export async function POST(req: NextRequest) {
       recorrente: recorrente ?? false,
       diaVencimento: recorrente ? diaVencimento : null,
       dataVencimento: new Date(dataVencimento),
-      status: "PENDENTE",
+      status: statusFinal,
+      dataPagamento: dataPagamentoFinal,
       observacao: observacao || null,
       criadoPorId: user?.id || null,
       responsavelId: responsavelId || null,
