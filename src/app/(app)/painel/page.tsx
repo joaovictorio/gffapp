@@ -21,6 +21,11 @@ interface DashboardData {
     cor: string;
     total: number;
   }>;
+  pagamentosPorForma: Array<{
+    forma: string;
+    icone: string;
+    total: number;
+  }>;
   proximosAniversarios: Array<{
     nome: string;
     data: string;
@@ -191,6 +196,35 @@ export default function PainelPage() {
                   </div>
                 );
               })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payments by Method */}
+      {dados && dados.pagamentosPorForma && dados.pagamentosPorForma.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">💳 Pagamentos por Forma</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {dados.pagamentosPorForma
+                .sort((a, b) => b.total - a.total)
+                .map((fp, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl"
+                  >
+                    <span className="text-xl">{fp.icone}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500 truncate">{fp.forma}</p>
+                      <p className="text-sm font-bold text-gray-800">
+                        {formatCurrency(fp.total)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </CardContent>
         </Card>
       )}

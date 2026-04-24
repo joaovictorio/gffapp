@@ -74,6 +74,31 @@ export async function GET() {
       {} as Record<string, { conta: string; icone: string; cor: string; total: number }>
     );
 
+  // Payments by payment method (paid expenses only)
+  const FORMA_PAGAMENTO_LABELS: Record<string, { label: string; icone: string }> = {
+    PIX: { label: "Pix", icone: "🔑" },
+    DEBITO: { label: "Debito", icone: "💳" },
+    CREDITO: { label: "Credito", icone: "💳" },
+    DINHEIRO: { label: "Dinheiro", icone: "💵" },
+    TRANSFERENCIA: { label: "Transferencia", icone: "🔄" },
+    BOLETO: { label: "Boleto", icone: "📄" },
+  };
+
+  const pagamentosPorForma = lancamentos
+    .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO" && l.formaPagamento)
+    .reduce(
+      (acc, l) => {
+        const key = l.formaPagamento as string;
+        if (!acc[key]) {
+          const meta = FORMA_PAGAMENTO_LABELS[key] || { label: key, icone: "💰" };
+          acc[key] = { forma: meta.label, icone: meta.icone, total: 0 };
+        }
+        acc[key].total += l.valor + (l.multa || 0) + (l.juros || 0);
+        return acc;
+      },
+      {} as Record<string, { forma: string; icone: string; total: number }>
+    );
+
   // Upcoming birthdays (next 30 days)
   const aniversarios = await prisma.aniversario.findMany({
     where: { tenantId },
@@ -124,6 +149,7 @@ export async function GET() {
       provisoesReceita,
     },
     despesasPorCategoria: Object.values(despesasPorCategoria),
+    pagamentosPorForma: Object.values(pagamentosPorForma),
     proximosAniversarios,
     proximosEventos: proximosEventos.map((e) => ({
       id: e.id,
