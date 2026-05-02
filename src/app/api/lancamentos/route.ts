@@ -18,12 +18,20 @@ export async function GET(req: NextRequest) {
   const where: Record<string, unknown> = { tenantId };
 
   // Filter by month/year on dataVencimento
+  // When filtering by month: include all entries from the month + unpaid (PENDENTE/ATRASADO)
+  // from previous months that still need to be settled
   if (mes && ano) {
     const mesNum = parseInt(mes, 10);
     const anoNum = parseInt(ano, 10);
     const inicio = new Date(anoNum, mesNum - 1, 1);
     const fim = new Date(anoNum, mesNum, 1);
-    where.dataVencimento = { gte: inicio, lt: fim };
+    where.OR = [
+      { dataVencimento: { gte: inicio, lt: fim } },
+      {
+        dataVencimento: { lt: inicio },
+        status: { in: ["PENDENTE", "ATRASADO"] },
+      },
+    ];
   } else if (ano) {
     const anoNum = parseInt(ano, 10);
     const inicio = new Date(anoNum, 0, 1);
