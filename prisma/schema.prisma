@@ -97,7 +97,9 @@ model Lancamento {
   responsavel      User?     @relation("LancamentoResponsavel", fields: [responsavelId], references: [id])
   formaPagamento   String?   // "PIX" | "DEBITO" | "CREDITO" | "DINHEIRO" | "TRANSFERENCIA" | "BOLETO"
   contaBancariaId  String?
-  contaBancaria    ContaBancaria? @relation(fields: [contaBancariaId], references: [id])
+  contaBancaria    ContaBancaria? @relation("LancamentoConta", fields: [contaBancariaId], references: [id])
+  cartaoCreditoId  String?
+  cartaoCredito    ContaBancaria? @relation("PagamentoFatura", fields: [cartaoCreditoId], references: [id])
   codigoBarras     String?
   multa            Float?    @default(0)
   juros            Float?    @default(0)
@@ -107,6 +109,7 @@ model Lancamento {
 
   @@index([tenantId])
   @@index([tenantId, dataVencimento])
+  @@index([cartaoCreditoId])
   @@index([contaId])
   @@index([eventoId])
   @@index([responsavelId])
@@ -131,7 +134,8 @@ model ContaBancaria {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  lancamentos Lancamento[]
+  lancamentos        Lancamento[] @relation("LancamentoConta")
+  pagamentosFatura   Lancamento[] @relation("PagamentoFatura")
 
   @@index([tenantId])
 }

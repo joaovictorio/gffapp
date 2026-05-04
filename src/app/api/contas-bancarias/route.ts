@@ -15,24 +15,52 @@ export async function GET() {
     include: {
       lancamentos: {
         where: { status: "PAGO" },
-        select: { valor: true, tipo: true, multa: true, juros: true },
+        select: { valor: true, tipo: true, multa: true, juros: true, formaPagamento: true },
+      },
+      pagamentosFatura: {
+        where: { status: "PAGO" },
+        select: { valor: true, multa: true, juros: true },
       },
     },
   });
 
   const result = contas.map((conta) => {
+    if (conta.tipo === "CARTAO") {
+      // Cartao de credito: fatura aberta = compras com credito - pagamentos da fatura
+      const comprasCredito = conta.lancamentos
+        .filter((l) => l.tipo === "DESPESA" && l.formaPagamento === "CREDITO")
+        .reduce((sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0), 0);
+
+      const pagamentosFatura = conta.pagamentosFatura.reduce(
+        (sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0),
+        0
+      );
+
+      const faturaAtual = comprasCredito - pagamentosFatura;
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { lancamentos, pagamentosFatura: _pf, ...contaSemLancamentos } = conta;
+
+      return {
+        ...contaSemLancamentos,
+        saldoAtual: -faturaAtual, // negativo para representar divida
+        faturaAtual,
+      };
+    }
+
+    // Conta normal: exclui despesas pagas com cartao de credito
     const somaReceitas = conta.lancamentos
       .filter((l) => l.tipo === "RECEITA")
       .reduce((sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
     const somaDespesas = conta.lancamentos
-      .filter((l) => l.tipo === "DESPESA")
+      .filter((l) => l.tipo === "DESPESA" && l.formaPagamento !== "CREDITO")
       .reduce((sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
     const saldoAtual = conta.saldoInicial + somaReceitas - somaDespesas;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { lancamentos, ...contaSemLancamentos } = conta;
+    const { lancamentos, pagamentosFatura, ...contaSemLancamentos } = conta;
 
     return {
       ...contaSemLancamentos,
@@ -61,10 +89,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const tiposValidos = ["CORRENTE", "POUPANCA", "CARTEIRA", "OUTRO"];
+  const tiposValidos = ["CORRENTE", "POUPANCA", "CARTEIRA", "CARTAO", "OUTRO"];
   if (!tiposValidos.includes(tipo)) {
     return NextResponse.json(
-      { error: "Tipo deve ser CORRENTE, POUPANCA, CARTEIRA ou OUTRO" },
+      { error: "Tipo deve ser CORRENTE, POUPANCA, CARTEIRA, CARTAO ou OUTRO" },
       { status: 400 }
     );
   }

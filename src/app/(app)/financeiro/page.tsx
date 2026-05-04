@@ -69,11 +69,13 @@ interface Lancamento {
   conta: Conta;
   responsavel?: { id: string; nome: string; avatar: string | null } | null;
   formaPagamento?: string | null;
-  contaBancaria?: { id: string; nome: string; icone: string | null } | null;
+  contaBancaria?: { id: string; nome: string; icone: string | null; tipo?: string } | null;
+  cartaoCredito?: { id: string; nome: string; icone: string | null } | null;
   codigoBarras?: string | null;
   multa?: number | null;
   juros?: number | null;
   contaBancariaId?: string | null;
+  cartaoCreditoId?: string | null;
   responsavelId?: string | null;
 }
 
@@ -81,6 +83,7 @@ interface ContaBancaria {
   id: string;
   nome: string;
   icone: string | null;
+  tipo: string;
 }
 
 interface ContaContabil {
@@ -165,6 +168,7 @@ export default function FinanceiroPage() {
     juros: "",
     jaQuitado: false,
     dataPagamento: "",
+    cartaoCreditoId: "",
   });
 
   const fetchLancamentos = useCallback(async () => {
@@ -242,8 +246,9 @@ export default function FinanceiroPage() {
     .filter((l) => l.tipo === "RECEITA" && l.status === "PAGO")
     .reduce((acc, l) => acc + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
+  // Exclui despesas pagas no credito - elas serao computadas quando a fatura for paga
   const totalDespesas = lancamentos
-    .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO")
+    .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO" && l.formaPagamento !== "CREDITO")
     .reduce((acc, l) => acc + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
   const saldo = totalReceitas - totalDespesas;
@@ -346,6 +351,7 @@ export default function FinanceiroPage() {
         codigoBarras: form.codigoBarras || null,
         multa: form.multa ? parseFloat(form.multa) : 0,
         juros: form.juros ? parseFloat(form.juros) : 0,
+        cartaoCreditoId: form.cartaoCreditoId || null,
       };
 
       if (form.jaQuitado) {
@@ -396,6 +402,7 @@ export default function FinanceiroPage() {
       juros: "",
       jaQuitado: false,
       dataPagamento: "",
+      cartaoCreditoId: "",
     });
   }
 
@@ -419,6 +426,7 @@ export default function FinanceiroPage() {
       juros: l.juros ? l.juros.toString() : "",
       jaQuitado: l.status === "PAGO",
       dataPagamento: l.dataPagamento ? l.dataPagamento.split("T")[0] : "",
+      cartaoCreditoId: l.cartaoCredito?.id || "",
     });
     setSheetOpen(true);
   }
@@ -506,16 +514,21 @@ export default function FinanceiroPage() {
                 {l.tipo === "RECEITA" ? "recebeu" : "pagou"}
               </p>
             )}
-            {(l.formaPagamento || l.contaBancaria) && (
-              <div className="flex gap-1.5 mt-1">
+            {(l.formaPagamento || l.contaBancaria || l.cartaoCredito) && (
+              <div className="flex gap-1.5 mt-1 flex-wrap">
                 {l.formaPagamento && (
                   <Badge variant="outline" className="text-xs">
                     {FORMAS_PAGAMENTO.find((fp) => fp.value === l.formaPagamento)?.label || l.formaPagamento}
                   </Badge>
                 )}
+                {l.cartaoCredito && (
+                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700">
+                    💳 Fatura {l.cartaoCredito.nome}
+                  </Badge>
+                )}
                 {l.contaBancaria && (
                   <Badge variant="outline" className="text-xs">
-                    {l.contaBancaria.icone || "\u{1F3E6}"} {l.contaBancaria.nome}
+                    {l.contaBancaria.icone || (l.contaBancaria.tipo === "CARTAO" ? "💳" : "🏦")} {l.contaBancaria.nome}
                   </Badge>
                 )}
               </div>
@@ -791,20 +804,22 @@ export default function FinanceiroPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Conta Bancaria</Label>
+              <Label>{quitarForm.formaPagamento === "CREDITO" ? "Cartao Usado" : "Conta Bancaria"}</Label>
               <Select
                 value={quitarForm.contaBancariaId || undefined}
                 onValueChange={(v) => setQuitarForm((f) => ({ ...f, contaBancariaId: v ?? "" }))}
               >
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Selecione...">
-                    {quitarForm.contaBancariaId ? (() => { const cb = contasBancarias.find(x => x.id === quitarForm.contaBancariaId); return cb ? `${cb.icone || "🏦"} ${cb.nome}` : undefined; })() : undefined}
+                    {quitarForm.contaBancariaId ? (() => { const cb = contasBancarias.find(x => x.id === quitarForm.contaBancariaId); return cb ? `${cb.icone || (cb.tipo === "CARTAO" ? "💳" : "🏦")} ${cb.nome}` : undefined; })() : undefined}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {contasBancarias.map((cb) => (
+                  {contasBancarias
+                    .filter((cb) => quitarForm.formaPagamento === "CREDITO" ? cb.tipo === "CARTAO" : cb.tipo !== "CARTAO")
+                    .map((cb) => (
                     <SelectItem key={cb.id} value={cb.id}>
-                      {cb.icone || "🏦"} {cb.nome}
+                      {cb.icone || (cb.tipo === "CARTAO" ? "💳" : "🏦")} {cb.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -993,9 +1008,13 @@ export default function FinanceiroPage() {
               </Select>
             </div>
 
-            {/* Conta Bancaria */}
+            {/* Conta Bancaria - filtra por forma de pagamento */}
             <div className="space-y-1.5">
-              <Label>Conta Bancaria</Label>
+              <Label>
+                {form.formaPagamento === "CREDITO"
+                  ? "Cartao de Credito Usado"
+                  : "Conta Bancaria"}
+              </Label>
               <Select
                 value={form.contaBancariaId || undefined}
                 onValueChange={(v) =>
@@ -1003,19 +1022,57 @@ export default function FinanceiroPage() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione a conta bancaria">
-                    {form.contaBancariaId ? (() => { const cb = contasBancarias.find(x => x.id === form.contaBancariaId); return cb ? `${cb.icone || "🏦"} ${cb.nome}` : undefined; })() : undefined}
+                  <SelectValue placeholder={form.formaPagamento === "CREDITO" ? "Selecione o cartao" : "Selecione a conta"}>
+                    {form.contaBancariaId ? (() => { const cb = contasBancarias.find(x => x.id === form.contaBancariaId); return cb ? `${cb.icone || (cb.tipo === "CARTAO" ? "💳" : "🏦")} ${cb.nome}` : undefined; })() : undefined}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {contasBancarias.map((cb) => (
-                    <SelectItem key={cb.id} value={cb.id}>
-                      {cb.icone || "🏦"} {cb.nome}
-                    </SelectItem>
-                  ))}
+                  {contasBancarias
+                    .filter((cb) => {
+                      if (form.formaPagamento === "CREDITO") return cb.tipo === "CARTAO";
+                      return cb.tipo !== "CARTAO";
+                    })
+                    .map((cb) => (
+                      <SelectItem key={cb.id} value={cb.id}>
+                        {cb.icone || (cb.tipo === "CARTAO" ? "💳" : "🏦")} {cb.nome}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Pagamento de Fatura - so para despesas nao-credito */}
+            {form.tipo === "DESPESA" &&
+              form.formaPagamento !== "CREDITO" &&
+              contasBancarias.some((cb) => cb.tipo === "CARTAO") && (
+                <div className="space-y-1.5">
+                  <Label>Pagamento de Fatura? (opcional)</Label>
+                  <Select
+                    value={form.cartaoCreditoId || undefined}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, cartaoCreditoId: v ?? "" }))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione se for pagamento de fatura">
+                        {form.cartaoCreditoId ? (() => { const c = contasBancarias.find(x => x.id === form.cartaoCreditoId); return c ? `💳 ${c.nome}` : undefined; })() : undefined}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {contasBancarias
+                        .filter((cb) => cb.tipo === "CARTAO")
+                        .map((cb) => (
+                          <SelectItem key={cb.id} value={cb.id}>
+                            💳 {cb.nome}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    Marque se este lancamento eh o pagamento da fatura de um cartao
+                  </p>
+                </div>
+              )}
 
             {/* Natureza */}
             <div className="space-y-1.5">

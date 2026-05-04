@@ -57,6 +57,9 @@ export async function GET(req: NextRequest) {
         select: { id: true, nome: true, avatar: true },
       },
       contaBancaria: {
+        select: { id: true, nome: true, icone: true, tipo: true },
+      },
+      cartaoCredito: {
         select: { id: true, nome: true, icone: true },
       },
     },
@@ -93,6 +96,7 @@ export async function POST(req: NextRequest) {
     juros,
     status,
     dataPagamento,
+    cartaoCreditoId,
   } = body;
 
   // Validation
@@ -164,6 +168,7 @@ export async function POST(req: NextRequest) {
       eventoId: eventoId || null,
       formaPagamento: formaPagamento || null,
       contaBancariaId: contaBancariaId || null,
+      cartaoCreditoId: cartaoCreditoId || null,
       codigoBarras: codigoBarras || null,
       multa: multa ?? 0,
       juros: juros ?? 0,
@@ -176,6 +181,9 @@ export async function POST(req: NextRequest) {
         select: { id: true, nome: true, avatar: true },
       },
       contaBancaria: {
+        select: { id: true, nome: true, icone: true, tipo: true },
+      },
+      cartaoCredito: {
         select: { id: true, nome: true, icone: true },
       },
     },

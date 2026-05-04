@@ -25,6 +25,7 @@ const TIPO_LABELS: Record<string, string> = {
   CORRENTE: "Conta Corrente",
   POUPANCA: "Poupanca",
   CARTEIRA: "Carteira/Dinheiro",
+  CARTAO: "Cartao de Credito",
   OUTRO: "Outro",
 };
 
@@ -32,6 +33,7 @@ const TIPO_COLORS: Record<string, string> = {
   CORRENTE: "bg-blue-100 text-blue-800",
   POUPANCA: "bg-green-100 text-green-800",
   CARTEIRA: "bg-amber-100 text-amber-800",
+  CARTAO: "bg-purple-100 text-purple-800",
   OUTRO: "bg-gray-100 text-gray-800",
 };
 
@@ -44,6 +46,7 @@ interface ContaBancaria {
   numeroConta: string | null;
   saldoInicial: number;
   saldoAtual: number;
+  faturaAtual?: number;
   icone: string | null;
   cor: string | null;
 }
@@ -166,7 +169,12 @@ export default function ContasBancariasPage() {
     }
   }
 
-  const saldoTotal = contas.reduce((sum, c) => sum + c.saldoAtual, 0);
+  const saldoTotal = contas
+    .filter((c) => c.tipo !== "CARTAO")
+    .reduce((sum, c) => sum + c.saldoAtual, 0);
+  const faturaTotal = contas
+    .filter((c) => c.tipo === "CARTAO")
+    .reduce((sum, c) => sum + (c.faturaAtual ?? 0), 0);
 
   if (loading) {
     return (
@@ -189,19 +197,31 @@ export default function ContasBancariasPage() {
         </p>
       </div>
 
-      {/* Summary Card */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <CardContent className="py-6 text-center">
-          <p className="text-sm text-gray-600 mb-1">Saldo Total</p>
-          <p
-            className={`text-3xl font-bold ${
-              saldoTotal >= 0 ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {formatCurrency(saldoTotal)}
-          </p>
-        </CardContent>
-      </Card>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardContent className="py-6 text-center">
+            <p className="text-sm text-gray-600 mb-1">💰 Saldo Total em Contas</p>
+            <p
+              className={`text-3xl font-bold ${
+                saldoTotal >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {formatCurrency(saldoTotal)}
+            </p>
+          </CardContent>
+        </Card>
+        {faturaTotal > 0 && (
+          <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+            <CardContent className="py-6 text-center">
+              <p className="text-sm text-gray-600 mb-1">💳 Fatura Aberta dos Cartoes</p>
+              <p className="text-3xl font-bold text-red-600">
+                {formatCurrency(faturaTotal)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Account Cards Grid */}
       {contas.length === 0 ? (
@@ -245,13 +265,28 @@ export default function ContasBancariasPage() {
                   </Badge>
                 </div>
 
-                <p
-                  className={`text-2xl font-bold ${
-                    conta.saldoAtual >= 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {formatCurrency(conta.saldoAtual)}
-                </p>
+                {conta.tipo === "CARTAO" ? (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Fatura aberta</p>
+                    <p
+                      className={`text-2xl font-bold ${
+                        (conta.faturaAtual ?? 0) > 0
+                          ? "text-red-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {formatCurrency(conta.faturaAtual ?? 0)}
+                    </p>
+                  </div>
+                ) : (
+                  <p
+                    className={`text-2xl font-bold ${
+                      conta.saldoAtual >= 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {formatCurrency(conta.saldoAtual)}
+                  </p>
+                )}
 
                 {(conta.agencia || conta.numeroConta) && (
                   <p className="text-xs text-gray-400">
@@ -334,19 +369,22 @@ export default function ContasBancariasPage() {
               <div className="space-y-2">
                 <Label htmlFor="tipo">Tipo *</Label>
                 <Select
-                  value={form.tipo}
+                  value={form.tipo || undefined}
                   onValueChange={(v) =>
                     setForm((f) => ({ ...f, tipo: v ?? "" }))
                   }
                 >
                   <SelectTrigger id="tipo" className="h-12">
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder="Selecione">
+                      {form.tipo ? TIPO_LABELS[form.tipo] || form.tipo : undefined}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CORRENTE">Conta Corrente</SelectItem>
-                    <SelectItem value="POUPANCA">Poupanca</SelectItem>
-                    <SelectItem value="CARTEIRA">Carteira/Dinheiro</SelectItem>
-                    <SelectItem value="OUTRO">Outro</SelectItem>
+                    <SelectItem value="CORRENTE">🏦 Conta Corrente</SelectItem>
+                    <SelectItem value="POUPANCA">💰 Poupanca</SelectItem>
+                    <SelectItem value="CARTEIRA">👛 Carteira/Dinheiro</SelectItem>
+                    <SelectItem value="CARTAO">💳 Cartao de Credito</SelectItem>
+                    <SelectItem value="OUTRO">📦 Outro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -45,6 +45,7 @@ export async function PUT(
     multa,
     juros,
     dataPagamento,
+    cartaoCreditoId,
   } = body;
 
   // Build update data with only provided fields
@@ -77,6 +78,7 @@ export async function PUT(
   if (codigoBarras !== undefined) updateData.codigoBarras = codigoBarras || null;
   if (multa !== undefined) updateData.multa = multa;
   if (juros !== undefined) updateData.juros = juros;
+  if (cartaoCreditoId !== undefined) updateData.cartaoCreditoId = cartaoCreditoId || null;
 
   // Handle status change - when marking as PAGO, set dataPagamento
   if (status !== undefined) {
@@ -101,6 +103,9 @@ export async function PUT(
         select: { id: true, nome: true, avatar: true },
       },
       contaBancaria: {
+        select: { id: true, nome: true, icone: true, tipo: true },
+      },
+      cartaoCredito: {
         select: { id: true, nome: true, icone: true },
       },
     },

@@ -27,8 +27,10 @@ export async function GET() {
     .filter((l) => l.tipo === "RECEITA" && l.status === "PAGO")
     .reduce((sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
+  // Excluir despesas pagas com cartao de credito - estas serao computadas
+  // quando a fatura do cartao for paga
   const totalDespesas = lancamentos
-    .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO")
+    .filter((l) => l.tipo === "DESPESA" && l.status === "PAGO" && l.formaPagamento !== "CREDITO")
     .reduce((sum, l) => sum + l.valor + (l.multa || 0) + (l.juros || 0), 0);
 
   const provisoes = lancamentos
