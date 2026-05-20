@@ -10,6 +10,7 @@ const navItems = [
   { href: "/financeiro", label: "Dinheiro", emoji: "💰" },
   { href: "/plano-financeiro", label: "Plano Financeiro", emoji: "📊" },
   { href: "/contas-bancarias", label: "Contas Bancarias", emoji: "🏦" },
+  { href: "/relatorios", label: "Relatorios", emoji: "📊" },
   { href: "/plano-de-contas", label: "Plano de Contas", emoji: "📋" },
   { href: "/aniversarios", label: "Aniversarios", emoji: "🎂" },
   { href: "/eventos", label: "Eventos", emoji: "📅" },
