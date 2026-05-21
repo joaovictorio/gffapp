@@ -106,40 +106,77 @@ export async function GET() {
     where: { tenantId },
   });
 
-  const proximosAniversarios = aniversarios
-    .map((a) => {
-      const hoje = new Date();
-      const aniv = new Date(a.data);
-      const proximo = new Date(hoje.getFullYear(), aniv.getMonth(), aniv.getDate());
-      if (proximo < hoje) proximo.setFullYear(proximo.getFullYear() + 1);
-      const dias = Math.ceil(
-        (proximo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      return {
-        nome: a.nome,
-        data: a.data,
-        icone: a.icone || "🎂",
-        parentesco: a.parentesco,
-        diasRestantes: dias,
-      };
-    })
+  const hojeMeiaNoite = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const aniversariosComDias = aniversarios.map((a) => {
+    const aniv = new Date(a.data);
+    let proximo = new Date(hojeMeiaNoite.getFullYear(), aniv.getMonth(), aniv.getDate());
+    if (proximo < hojeMeiaNoite) {
+      proximo = new Date(hojeMeiaNoite.getFullYear() + 1, aniv.getMonth(), aniv.getDate());
+    }
+    const dias = Math.round(
+      (proximo.getTime() - hojeMeiaNoite.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return {
+      nome: a.nome,
+      data: a.data,
+      icone: a.icone || "🎂",
+      parentesco: a.parentesco,
+      diasRestantes: dias,
+    };
+  });
+
+  const proximosAniversarios = aniversariosComDias
     .filter((a) => a.diasRestantes <= 30)
     .sort((a, b) => a.diasRestantes - b.diasRestantes)
     .slice(0, 5);
 
+  // Avisos: aniversarios HOJE e AMANHA
+  const avisosAniversarios = aniversariosComDias.filter(
+    (a) => a.diasRestantes === 0 || a.diasRestantes === 1
+  );
+
   // Upcoming events
-  const proximosEventos = await prisma.evento.findMany({
+  const eventosFuturos = await prisma.evento.findMany({
     where: {
       tenantId,
-      dataInicio: { gte: now },
+      dataInicio: { gte: hojeMeiaNoite },
       status: { in: ["PLANEJANDO", "CONFIRMADO"] },
     },
     orderBy: { dataInicio: "asc" },
-    take: 5,
+    take: 10,
     include: {
       itens: { select: { valorEstimado: true, valorReal: true } },
     },
   });
+
+  const eventosComDias = eventosFuturos.map((e) => {
+    const dataEvento = new Date(e.dataInicio);
+    const eventoMeiaNoite = new Date(
+      dataEvento.getFullYear(),
+      dataEvento.getMonth(),
+      dataEvento.getDate()
+    );
+    const dias = Math.round(
+      (eventoMeiaNoite.getTime() - hojeMeiaNoite.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return { evento: e, diasRestantes: dias };
+  });
+
+  const proximosEventos = eventosComDias.slice(0, 5).map((x) => x.evento);
+
+  // Avisos: eventos HOJE e AMANHA
+  const avisosEventos = eventosComDias
+    .filter((x) => x.diasRestantes === 0 || x.diasRestantes === 1)
+    .map((x) => ({
+      id: x.evento.id,
+      titulo: x.evento.titulo,
+      tipo: x.evento.tipo,
+      icone: x.evento.icone,
+      dataInicio: x.evento.dataInicio,
+      local: x.evento.local,
+      diasRestantes: x.diasRestantes,
+    }));
 
   return NextResponse.json({
     resumoMes: {
@@ -152,6 +189,8 @@ export async function GET() {
     },
     despesasPorCategoria: Object.values(despesasPorCategoria),
     pagamentosPorForma: Object.values(pagamentosPorForma),
+    avisosAniversarios,
+    avisosEventos,
     proximosAniversarios,
     proximosEventos: proximosEventos.map((e) => ({
       id: e.id,

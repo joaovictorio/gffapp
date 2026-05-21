@@ -26,6 +26,22 @@ interface DashboardData {
     icone: string;
     total: number;
   }>;
+  avisosAniversarios: Array<{
+    nome: string;
+    data: string;
+    icone: string;
+    parentesco: string | null;
+    diasRestantes: number;
+  }>;
+  avisosEventos: Array<{
+    id: string;
+    titulo: string;
+    tipo: string;
+    icone: string | null;
+    dataInicio: string;
+    local: string | null;
+    diasRestantes: number;
+  }>;
   proximosAniversarios: Array<{
     nome: string;
     data: string;
@@ -70,6 +86,102 @@ export default function PainelPage() {
         </h1>
         <p className="text-gray-500 mt-1">Veja como esta sua familia</p>
       </div>
+
+      {/* Avisos de aniversarios e eventos - hoje e amanha */}
+      {dados &&
+        (dados.avisosAniversarios?.length > 0 || dados.avisosEventos?.length > 0) && (
+          <div className="space-y-2">
+            {/* Aniversarios hoje */}
+            {dados.avisosAniversarios
+              ?.filter((a) => a.diasRestantes === 0)
+              .map((a, i) => (
+                <Link key={`a-hoje-${i}`} href="/aniversarios">
+                  <div className="bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-300 rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="text-4xl animate-bounce">🎉</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-purple-900">
+                        Hoje e aniversario!
+                      </p>
+                      <p className="text-sm text-purple-800 truncate">
+                        {a.icone} <strong>{a.nome}</strong>
+                        {a.parentesco && ` - ${a.parentesco}`}
+                      </p>
+                    </div>
+                    <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full font-bold">
+                      HOJE
+                    </span>
+                  </div>
+                </Link>
+              ))}
+
+            {/* Aniversarios amanha */}
+            {dados.avisosAniversarios
+              ?.filter((a) => a.diasRestantes === 1)
+              .map((a, i) => (
+                <Link key={`a-amanha-${i}`} href="/aniversarios">
+                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 flex items-center gap-3 hover:bg-purple-100 transition-colors cursor-pointer">
+                    <div className="text-2xl">🎂</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-purple-900 text-sm">
+                        Amanha eh aniversario de {a.nome}!
+                      </p>
+                      {a.parentesco && (
+                        <p className="text-xs text-purple-700">{a.parentesco}</p>
+                      )}
+                    </div>
+                    <span className="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-medium">
+                      Amanha
+                    </span>
+                  </div>
+                </Link>
+              ))}
+
+            {/* Eventos hoje */}
+            {dados.avisosEventos
+              ?.filter((e) => e.diasRestantes === 0)
+              .map((e) => (
+                <Link key={`e-hoje-${e.id}`} href={`/eventos/${e.id}`}>
+                  <div className="bg-gradient-to-r from-blue-100 to-cyan-100 border-2 border-blue-300 rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="text-4xl animate-pulse">📅</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-blue-900">Evento hoje!</p>
+                      <p className="text-sm text-blue-800 truncate">
+                        {e.icone || "📌"} <strong>{e.titulo}</strong>
+                      </p>
+                      {e.local && (
+                        <p className="text-xs text-blue-700">📍 {e.local}</p>
+                      )}
+                    </div>
+                    <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-bold">
+                      HOJE
+                    </span>
+                  </div>
+                </Link>
+              ))}
+
+            {/* Eventos amanha */}
+            {dados.avisosEventos
+              ?.filter((e) => e.diasRestantes === 1)
+              .map((e) => (
+                <Link key={`e-amanha-${e.id}`} href={`/eventos/${e.id}`}>
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3 hover:bg-blue-100 transition-colors cursor-pointer">
+                    <div className="text-2xl">📅</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-blue-900 text-sm">
+                        Amanha tem evento: {e.titulo}
+                      </p>
+                      {e.local && (
+                        <p className="text-xs text-blue-700">📍 {e.local}</p>
+                      )}
+                    </div>
+                    <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full font-medium">
+                      Amanha
+                    </span>
+                  </div>
+                </Link>
+              ))}
+          </div>
+        )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
