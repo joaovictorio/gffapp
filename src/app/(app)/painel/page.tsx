@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
+import TutorialModal from "@/components/TutorialModal";
 
 interface DashboardData {
   resumoMes: {
@@ -66,12 +67,31 @@ interface DashboardData {
 export default function PainelPage() {
   const { data: session } = useSession();
   const [dados, setDados] = useState<DashboardData | null>(null);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const fetchDados = useCallback(async () => {
     const res = await fetch("/api/dashboard");
     if (res.ok) {
       setDados(await res.json());
     }
+  }, []);
+
+  useEffect(() => {
+    // Verifica se eh o primeiro acesso (tutorial nao visto)
+    async function checkTutorial() {
+      try {
+        const res = await fetch("/api/me/tutorial");
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.tutorialVisto) {
+            setTutorialOpen(true);
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao verificar tutorial:", err);
+      }
+    }
+    checkTutorial();
   }, []);
 
   useEffect(() => {
@@ -422,6 +442,9 @@ export default function PainelPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tutorial de primeiro acesso */}
+      <TutorialModal open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </div>
   );
 }

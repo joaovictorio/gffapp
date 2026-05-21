@@ -15,6 +15,7 @@ const navItems = [
   { href: "/aniversarios", label: "Aniversarios", emoji: "🎂" },
   { href: "/eventos", label: "Eventos", emoji: "📅" },
   { href: "/configuracoes", label: "Familia", emoji: "👨‍👩‍👧‍👦" },
+  { href: "/ajuda", label: "Ajuda", emoji: "❓" },
 ];
 
 const adminItem = { href: "/admin", label: "Admin Plataforma", emoji: "🛡️" };
